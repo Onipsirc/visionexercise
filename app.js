@@ -2,7 +2,8 @@ var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+var logger = require('morgan'); // Multer logger
+const multer = require('multer'); // Add multer
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -19,6 +20,34 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Multer config
+const storage = multer.diskStorage({
+  destination: function(req, file, callback) {
+    callback(null, path.join(__dirname, 'uploads')); // Use path.join for correct path handling
+  },
+  filename: function (req, file, callback) {
+    callback(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname)); // Add timestamp and extension for uniqueness
+  }
+});
+
+const upload = multer({ storage: storage });
+
+// POST route for image upload
+app.post('/uploadImage', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    console.log("No file received");
+    return res.send({
+      success: false
+    });
+  } else {
+    console.log('file received');
+    return res.send({
+      success: true
+    });
+  }
+});
+
+// App uses
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
