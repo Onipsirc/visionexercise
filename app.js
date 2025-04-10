@@ -19,6 +19,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static('uploads'));
 
 // Multer config
 const storage = multer.diskStorage({
@@ -41,8 +42,9 @@ app.post('/uploadImage', upload.single('file'), (req, res) => {
     });
   } else {
     console.log('file received');
+    const imageUrl = `/uploads/${req.file.filename}`;
     return res.send({
-      success: true
+      success: true, imageUrl: imageUrl
     });
   }
 });
