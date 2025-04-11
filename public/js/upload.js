@@ -19,18 +19,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if (data.success) {
-                    statusDiv.textContent = 'Image uploaded successfully!';
+                    const imagePreview = document.getElementById('uploadedImage');
+                    const labelList = document.getElementById('labelList');
 
-                    // Create or update the image element
-                    let imagePreview = document.getElementById('uploadedImage');
-                    if (!imagePreview) {
-                        imagePreview = document.createElement('img');
-                        imagePreview.id = 'uploadedImage';
-                        imagePreview.style.maxWidth = '300px';
-                        imagePreview.style.marginTop = '10px';
-                        statusDiv.appendChild(imagePreview);
-                    }
-                    imagePreview.src = data.imageUrl;
+                    // Show image and update its src
+                    imagePreview.src = data.imageSrc;
+                    imagePreview.style.display = 'block';
+
+                    // Clear old labels
+                    labelList.innerHTML = '';
+
+                    // Add new labels
+                    data.labels.forEach(label => {
+                        const li = document.createElement('li');
+                        li.textContent = `• ${label}`;
+                        labelList.appendChild(li);
+                    });
+
                 } else {
                     statusDiv.textContent = 'Image upload failed.';
                 }

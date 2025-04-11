@@ -4,6 +4,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan'); // Multer logger
 const multer = require('multer'); // Add multer
+const vision = require('@google-cloud/vision');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -22,32 +23,60 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static('uploads'));
 
 // Multer config
-const storage = multer.diskStorage({
-  destination: function(req, file, callback) {
-    callback(null, path.join(__dirname, 'uploads')); // Use path.join for correct path handling
-  },
-  filename: function (req, file, callback) {
-    callback(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname)); // Add timestamp and extension for uniqueness
-  }
-});
+const storage = multer.memoryStorage();
+// .diskStorage({
+//   destination: function(req, file, callback) {
+//     callback(null, path.join(__dirname, 'uploads')); // Use path.join for correct path handling
+//   },
+//   filename: function (req, file, callback) {
+//     callback(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname)); // Add timestamp and extension for uniqueness
+//   }
+// });
 
 const upload = multer({ storage: storage });
 
 // POST route for image upload
-app.post('/uploadImage', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    console.log("No file received");
-    return res.send({
-      success: false
-    });
-  } else {
-    console.log('file received');
-    const imageUrl = `/uploads/${req.file.filename}`;
-    return res.send({
-      success: true, imageUrl: imageUrl
-    });
+app.post('/uploadImage', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      console.log("No file received");
+
+      return res.send({success: false});
+    } else {
+      console.log('file received');
+
+      const imageBuffer = req.file.buffer;
+      const labels = await detectLabels(imageBuffer)
+
+      const imageBase64 = req.file.buffer.toString('base64');
+      const mimeType = req.file.mimetype; // e.g. image/jpeg
+
+      const imageSrc = `data:${mimeType};base64,${imageBase64}`;
+
+
+      return res.send({
+        success: true,
+        imageSrc: imageSrc,
+        labels: labels.map(label => label.description)
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    res.send({success: false});
   }
 });
+
+async function detectLabels(imageBuffer) {
+  const client = new vision.ImageAnnotatorClient();
+  const imageBase64 = imageBuffer.toString('base64');
+
+  const request = {
+    image: { content: imageBase64 },
+  };
+
+  const [result] = await client.labelDetection(request);
+  return result.labelAnnotations;
+}
 
 // App uses
 app.use('/', indexRouter);
