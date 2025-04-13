@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 const data = await response.json();
-
+                console.log('Response data:', data);
                 if (data.success) {
                     const imagePreview = document.getElementById('uploadedImage');
                     const labelList = document.getElementById('labelList');
